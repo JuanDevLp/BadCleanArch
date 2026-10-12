@@ -6,14 +6,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
 
-builder.Services.AddCors(o => o.AddPolicy("bad", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(o => o.AddPolicy("default", p => 
+    p.WithOrigins(allowedOrigins)
+    .WithHeaders()
+    .WithMethods("GET", "POST")));
 
 var app = builder.Build();
 
 BadDb.ConnectionString = app.Configuration["ConnectionStrings:Sql"]
     ?? throw new InvalidOperationException("Falta ConnectionStrings:Sql en la configuración.");
 
-app.UseCors("bad");
+app.UseCors("default");
 
 app.Use(async (ctx, next) =>
 {
